@@ -40,6 +40,13 @@ This is a finite classical approximation. `K` is explicit and finite; the
 implementation does not materialize an exponentially large physical quantum
 state.
 
+`StateVectorEngine` adds an explicit finite computational register with
+`2**qubits` complex amplitudes. It applies a model-derived phase oracle and
+Hadamard interference cycles before measurement. This is the exact finite
+state-vector algebra on classical tensors; its memory and compute grow
+exponentially with the qubit count, and it has no physical quantum speedup.
+`max_amplitudes` prevents accidental unbounded allocations.
+
 The V1 benchmark is runnable with:
 
 ```bash

@@ -5,9 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import torch
 from torch import Tensor, nn
 
 from .wave_state import QReasonAdapter, WaveStateConfig, WaveStateOutput
+from .statevector import StateVectorConfig, StateVectorEngine
 
 
 @dataclass
@@ -54,4 +56,56 @@ def attach_qreason(
     return QReasonHook(adapter=adapter, handle=handle)
 
 
-__all__ = ["QReasonHook", "attach_qreason"]
+class StateVectorAdapter(nn.Module):
+    """Shape-preserving residual adapter backed by an explicit state vector."""
+
+    def __init__(self, config: StateVectorConfig) -> None:
+        super().__init__()
+        self.engine = StateVectorEngine(config)
+        self.output = nn.Linear(config.hidden_dim, config.hidden_dim)
+        nn.init.zeros_(self.output.weight)
+        nn.init.zeros_(self.output.bias)
+        self.residual_gate = nn.Parameter(torch.tensor(0.0))
+
+    def forward(self, hidden: Tensor, *, enabled: bool = True) -> tuple[Tensor, Any]:
+        wave = self.engine(hidden, enabled=enabled)
+        if not enabled:
+            return hidden, wave
+        probabilities = wave.probabilities.reshape(-1, self.engine.config.amplitudes)
+        basis = torch.arange(
+            self.engine.config.amplitudes,
+            device=hidden.device,
+            dtype=probabilities.dtype,
+        )
+        normalized_basis = basis / max(1, self.engine.config.amplitudes - 1)
+        summary = (probabilities * normalized_basis).sum(-1, keepdim=True)
+        summary = summary.expand(-1, self.engine.config.hidden_dim)
+        update = self.output(summary).reshape_as(hidden)
+        return hidden + torch.tanh(self.residual_gate) * update, wave
+
+
+def attach_statevector_qreason(
+    module: nn.Module,
+    config: StateVectorConfig,
+    *,
+    enabled: bool = True,
+) -> QReasonHook:
+    """Register the explicit state-vector adapter on a transformer block."""
+    adapter = StateVectorAdapter(config)
+    adapter.eval()
+
+    def hook(_module: nn.Module, _inputs: tuple[Any, ...], output: Any) -> Any:
+        hidden = output if isinstance(output, Tensor) else output[0]
+        transformed, _wave = adapter(hidden, enabled=enabled)
+        return _replace_hidden(output, transformed)
+
+    handle = module.register_forward_hook(hook)
+    return QReasonHook(adapter=adapter, handle=handle)
+
+
+__all__ = [
+    "QReasonHook",
+    "StateVectorAdapter",
+    "attach_qreason",
+    "attach_statevector_qreason",
+]
