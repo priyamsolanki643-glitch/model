@@ -45,10 +45,15 @@ def attach_qreason(
     matching common transformer block APIs. The base module remains unchanged.
     """
     adapter = QReasonAdapter(config)
+    parameter = next(module.parameters(), None)
+    if parameter is not None:
+        adapter.to(parameter.device)
     adapter.eval()
 
     def hook(_module: nn.Module, _inputs: tuple[Any, ...], output: Any) -> Any:
         hidden = output if isinstance(output, Tensor) else output[0]
+        if next(adapter.parameters()).device != hidden.device:
+            adapter.to(hidden.device)
         transformed, _wave = adapter(hidden, enabled=enabled)
         return _replace_hidden(output, transformed)
 
@@ -86,10 +91,15 @@ def attach_statevector_qreason(
 ) -> QReasonHook:
     """Register the explicit state-vector adapter on a transformer block."""
     adapter = StateVectorAdapter(config)
+    parameter = next(module.parameters(), None)
+    if parameter is not None:
+        adapter.to(parameter.device)
     adapter.eval()
 
     def hook(_module: nn.Module, _inputs: tuple[Any, ...], output: Any) -> Any:
         hidden = output if isinstance(output, Tensor) else output[0]
+        if next(adapter.parameters()).device != hidden.device:
+            adapter.to(hidden.device)
         transformed, _wave = adapter(hidden, enabled=enabled)
         return _replace_hidden(output, transformed)
 
