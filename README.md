@@ -19,6 +19,7 @@ Current work includes:
 
 - numerical and gradient invariants for the QReason core;
 - a finite `K`-hypothesis complex wave-state engine with shape-preserving adapter;
+- a held-out bilinear latent-hypothesis comparison with classical controls;
 - oracle-informed synthetic controls;
 - verifier-free and trainable synthetic tasks;
 - Boolean candidate-selection benchmarks;
@@ -38,6 +39,15 @@ identity path.
 This is a finite classical approximation. `K` is explicit and finite; the
 implementation does not materialize an exponentially large physical quantum
 state.
+
+The V1 benchmark is runnable with:
+
+```bash
+python -m qreason.evaluate_wave_task
+```
+
+It compares wave, real feed-forward, and recurrent classifiers over the same
+held-out rule. Results are exploratory and do not establish an advantage.
 
 ## Layout
 
