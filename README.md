@@ -18,6 +18,7 @@ hallucination removal.
 Current work includes:
 
 - numerical and gradient invariants for the QReason core;
+- a finite `K`-hypothesis complex wave-state engine with shape-preserving adapter;
 - oracle-informed synthetic controls;
 - verifier-free and trainable synthetic tasks;
 - Boolean candidate-selection benchmarks;
@@ -25,6 +26,18 @@ Current work includes:
 
 The benchmark results are exploratory and must not be interpreted as evidence
 of improved language-model reasoning.
+
+## Wave-state V1
+
+`WaveStateEngine` maps each hidden vector to `K` learned complex hypotheses,
+applies input-conditioned phase and bounded Cayley evolution, then measures
+and collapses the state back to the original hidden width. `QReasonAdapter`
+wraps this in a residual, shape-preserving interface with an exact disabled
+identity path.
+
+This is a finite classical approximation. `K` is explicit and finite; the
+implementation does not materialize an exponentially large physical quantum
+state.
 
 ## Layout
 
