@@ -16,7 +16,7 @@ from .statevector import StateVectorConfig, StateVectorEngine
 class QReasonHook:
     """Handle for a registered hidden-state adapter hook."""
 
-    adapter: QReasonAdapter
+    adapter: nn.Module
     handle: Any
 
     def remove(self) -> None:
@@ -62,25 +62,19 @@ class StateVectorAdapter(nn.Module):
     def __init__(self, config: StateVectorConfig) -> None:
         super().__init__()
         self.engine = StateVectorEngine(config)
-        self.output = nn.Linear(config.hidden_dim, config.hidden_dim)
+        self.output = nn.Linear(config.amplitudes, config.hidden_dim)
         nn.init.zeros_(self.output.weight)
         nn.init.zeros_(self.output.bias)
         self.residual_gate = nn.Parameter(torch.tensor(0.0))
 
     def forward(self, hidden: Tensor, *, enabled: bool = True) -> tuple[Tensor, Any]:
-        wave = self.engine(hidden, enabled=enabled)
+        work_hidden = hidden.float()
+        wave = self.engine(work_hidden, enabled=enabled)
         if not enabled:
             return hidden, wave
         probabilities = wave.probabilities.reshape(-1, self.engine.config.amplitudes)
-        basis = torch.arange(
-            self.engine.config.amplitudes,
-            device=hidden.device,
-            dtype=probabilities.dtype,
-        )
-        normalized_basis = basis / max(1, self.engine.config.amplitudes - 1)
-        summary = (probabilities * normalized_basis).sum(-1, keepdim=True)
-        summary = summary.expand(-1, self.engine.config.hidden_dim)
-        update = self.output(summary).reshape_as(hidden)
+        update = self.output(probabilities).reshape_as(work_hidden)
+        update = update.to(dtype=hidden.dtype)
         return hidden + torch.tanh(self.residual_gate) * update, wave
 
 

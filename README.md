@@ -76,6 +76,27 @@ adapter is independently trainable; remove the hook with `handle.remove()`.
 Initial residual output is zero, so attaching it does not perturb a frozen
 model before adapter training.
 
+## Kaggle Qwen runner
+
+The repository includes an adapter-only runner for Qwen2.5-0.5B and
+Qwen2.5-Coder-1.5B. It requires a Kaggle GPU and downloads weights at runtime:
+
+```bash
+pip install transformers accelerate
+python -m qreason.qwen_kaggle \
+  --model qwen-0.5b \
+  --prompt-file prompts.jsonl \
+  --layers -1 \
+  --qubits 5 \
+  --train-steps 0
+```
+
+Each JSONL record must contain `prompt` and may contain `completion`. The base
+model is frozen; only adapter parameters train when `--train-steps` is
+positive. The runner reports baseline and adapted generations, but generation
+differences are not evidence of better reasoning. A real evaluation needs
+held-out planning tasks with correctness and calibration scoring.
+
 ## Layout
 
 ```text
