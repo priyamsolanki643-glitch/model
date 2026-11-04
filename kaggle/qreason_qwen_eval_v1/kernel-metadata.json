@@ -1,0 +1,14 @@
+{
+  "id": "priyamsolanki/qreason-qwen-eval-v1",
+  "title": "qreason-qwen-eval-v1",
+  "code_file": "qreason_qwen_eval.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}

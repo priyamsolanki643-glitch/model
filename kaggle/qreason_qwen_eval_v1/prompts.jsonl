@@ -1,0 +1,5 @@
+{"prompt":"You are solving a planning problem. Design a reliable step-by-step plan for implementing a rate-limited REST API client with retries, timeouts, idempotency, and tests.","completion":""}
+{"prompt":"You are solving a software engineering problem. Explain how to debug a production memory leak in a Python service, including measurements, hypotheses, experiments, and rollback criteria.","completion":""}
+{"prompt":"You are solving an algorithm problem. Plan an efficient solution for finding the shortest path in a weighted graph with non-negative edge weights, and state the invariant that proves correctness.","completion":""}
+{"prompt":"You are reviewing a code change. Create a structured checklist for detecting data races, resource leaks, missing error handling, and backwards-compatibility risks before merge.","completion":""}
+{"prompt":"You are designing a safe migration. Plan how to migrate a large relational database column with zero downtime, verification queries, monitoring, and rollback.","completion":""}

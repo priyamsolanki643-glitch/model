@@ -114,6 +114,31 @@ positive. The runner reports baseline and adapted generations, but generation
 differences are not evidence of better reasoning. A real evaluation needs
 held-out planning tasks with correctness and calibration scoring.
 
+The reproducible kernel source is versioned under
+[`kaggle/qreason_qwen_eval_v1`](./kaggle/qreason_qwen_eval_v1). It can be
+republished with:
+
+```bash
+kaggle kernels push -p kaggle/qreason_qwen_eval_v1
+kaggle kernels status priyamsolanki/qreason-qwen-eval-v1
+```
+
+Generated Kaggle outputs and adapter checkpoints are intentionally excluded
+from Git. Keep those as Kaggle artifacts or local experiment outputs.
+
+## Starting work later
+
+```bash
+git clone https://github.com/priyamsolanki643-glitch/model.git
+cd model
+python -m unittest discover -s qreason/tests -p "test_*.py"
+```
+
+The current research boundary is explicit: this is a classical PyTorch
+state-vector/adapter experiment, not physical quantum hardware or a proven
+reasoning improvement. The next valid research step is held-out planning
+evaluation after adapter-only training.
+
 ## Layout
 
 ```text
