@@ -76,6 +76,23 @@ adapter is independently trainable; remove the hook with `handle.remove()`.
 Initial residual output is zero, so attaching it does not perturb a frozen
 model before adapter training.
 
+For an adapter-only smoke training run, use `--train-steps 50` and save a
+checkpoint:
+
+```bash
+python -m qreason.qwen_kaggle \
+  --model qwen-0.5b \
+  --prompt-file prompts.jsonl \
+  --layers -1 \
+  --qubits 5 \
+  --train-steps 50 \
+  --checkpoint /kaggle/working/qreason-adapter.pt
+```
+
+The report includes base loss, adapted loss, adapter loss trajectory, and
+checkpoint metadata. This validates trainability and persistence; it is not
+evidence of improved reasoning until evaluated on held-out tasks.
+
 ## Kaggle Qwen runner
 
 The repository includes an adapter-only runner for Qwen2.5-0.5B and

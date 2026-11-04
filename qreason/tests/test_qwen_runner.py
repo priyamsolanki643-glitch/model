@@ -6,7 +6,12 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from qreason.qwen_kaggle import _encode, attach_layers
+from qreason.qwen_kaggle import (
+    _encode,
+    attach_layers,
+    load_adapter_checkpoint,
+    save_adapter_checkpoint,
+)
 
 
 class _Config:
@@ -38,6 +43,18 @@ class QwenRunnerTests(unittest.TestCase):
     def test_encoder_keeps_tensor_device(self) -> None:
         inputs = _encode(_Tokenizer(), "abc", torch.device("cpu"))
         self.assertEqual(inputs["input_ids"].shape, (1, 3))
+
+    def test_adapter_checkpoint_round_trip(self) -> None:
+        host = _Host()
+        hooks = attach_layers(host, layer_indices=[0], qubits=3, enabled=False)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "adapter.pt"
+            save_adapter_checkpoint(
+                hooks, path, model_id="test", layer_indices=[0], qubits=3
+            )
+            checkpoint = load_adapter_checkpoint(hooks, path)
+        self.assertEqual(checkpoint["model"], "test")
+        hooks[0].remove()
 
 
 if __name__ == "__main__":
