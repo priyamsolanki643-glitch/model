@@ -37,6 +37,7 @@ class WaveStateOutput:
     probabilities: Tensor
     quality: Tensor
     collapsed: Tensor
+    interference_norm: Tensor
     unitary_error: Tensor
     norm_error: Tensor
 
@@ -70,6 +71,17 @@ class WaveStateEngine(nn.Module):
         right = batch_identity - 1j * half_step * hamiltonian
         return torch.linalg.solve(left, right)
 
+    def coherent_collapse(self, state: Tensor) -> tuple[Tensor, Tensor]:
+        """Interfere hypothesis amplitudes before returning a real latent state."""
+        if state.ndim != 3 or state.shape[1] != self.config.hypotheses:
+            raise ValueError("state must have shape [batch, hypotheses, hidden_dim]")
+        coherent = state.sum(dim=1) / self.config.hypotheses**0.5
+        collapsed = coherent.real
+        collapsed = collapsed / torch.linalg.vector_norm(
+            collapsed, dim=-1, keepdim=True
+        ).clamp_min(self.config.eps)
+        return collapsed, torch.linalg.vector_norm(coherent, dim=-1).mean()
+
     def forward(self, hidden: Tensor, *, enabled: bool = True) -> WaveStateOutput:
         if hidden.ndim < 2 or hidden.shape[-1] != self.config.hidden_dim:
             raise ValueError("hidden must have shape [..., hidden_dim]")
@@ -91,6 +103,7 @@ class WaveStateEngine(nn.Module):
                 ),
                 quality=zeros,
                 collapsed=flat,
+                interference_norm=torch.zeros((), device=flat.device),
                 unitary_error=torch.zeros((), device=flat.device),
                 norm_error=torch.zeros((), device=flat.device),
             )
@@ -112,12 +125,7 @@ class WaveStateEngine(nn.Module):
         probabilities = probabilities / probabilities.sum(dim=-1, keepdim=True).clamp_min(
             self.config.eps
         )
-        collapsed = torch.einsum(
-            "bk,bkd->bd", probabilities.to(state.dtype), state
-        ).real
-        collapsed = collapsed / torch.linalg.vector_norm(
-            collapsed, dim=-1, keepdim=True
-        ).clamp_min(self.config.eps)
+        collapsed, interference_norm = self.coherent_collapse(state)
         identity = self.identity.to(device=operator.device, dtype=operator.dtype)
         unitary_error = torch.linalg.matrix_norm(
             operator.conj().transpose(-2, -1) @ operator - identity
@@ -130,6 +138,7 @@ class WaveStateEngine(nn.Module):
             probabilities=probabilities.reshape(*original_shape, self.config.hypotheses),
             quality=quality.reshape(*original_shape, self.config.hypotheses),
             collapsed=collapsed.reshape(*original_shape, self.config.hidden_dim),
+            interference_norm=interference_norm,
             unitary_error=unitary_error,
             norm_error=norm_error,
         )

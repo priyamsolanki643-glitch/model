@@ -49,6 +49,26 @@ python -m qreason.evaluate_wave_task
 It compares wave, real feed-forward, and recurrent classifiers over the same
 held-out rule. Results are exploratory and do not establish an advantage.
 
+## Model integration
+
+`attach_qreason(module, config)` registers a shape-preserving forward hook on a
+transformer-style block. The block may return a hidden tensor or a tuple whose
+first element is the hidden tensor; remaining cache outputs are preserved.
+
+```python
+from qreason import WaveStateConfig, attach_qreason
+
+handle = attach_qreason(
+    model.model.layers[0],
+    WaveStateConfig(hidden_dim=model.config.hidden_size, hypotheses=8),
+)
+```
+
+The base model is not modified or downloaded by this package. The returned
+adapter is independently trainable; remove the hook with `handle.remove()`.
+Initial residual output is zero, so attaching it does not perturb a frozen
+model before adapter training.
+
 ## Layout
 
 ```text

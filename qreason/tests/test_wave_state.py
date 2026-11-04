@@ -1,7 +1,9 @@
 import unittest
 
 import torch
+from torch import nn
 
+from qreason.model_integration import attach_qreason
 from qreason.wave_state import QReasonAdapter, WaveStateConfig, WaveStateEngine
 
 
@@ -53,6 +55,28 @@ class WaveStateTests(unittest.TestCase):
         result.square().mean().backward()
         self.assertIsNotNone(adapter.engine.hypothesis.weight.grad)
         self.assertTrue(torch.isfinite(adapter.engine.hypothesis.weight.grad).all())
+
+    def test_coherent_opposite_hypotheses_cancel(self) -> None:
+        state = torch.zeros(1, 5, 6, dtype=torch.complex64)
+        state[0, 0, 0] = 1.0
+        state[0, 1, 0] = -1.0
+        collapsed, interference_norm = self.engine.coherent_collapse(state)
+        self.assertEqual(float(interference_norm), 0.0)
+        self.assertEqual(float(torch.linalg.vector_norm(collapsed)), 0.0)
+
+    def test_hook_transforms_tensor_and_tuple_hidden_outputs(self) -> None:
+        class Block(nn.Module):
+            def forward(self, hidden: torch.Tensor) -> tuple[torch.Tensor, str]:
+                return hidden * 2.0, "cache"
+
+        block = Block()
+        hook = attach_qreason(block, self.config, enabled=False)
+        hidden = torch.randn(2, 3, 6)
+        result = block(hidden)
+        self.assertEqual(result[0].shape, hidden.shape)
+        self.assertEqual(result[1], "cache")
+        self.assertTrue(torch.equal(result[0], hidden * 2.0))
+        hook.remove()
 
 
 if __name__ == "__main__":
